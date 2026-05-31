@@ -18,6 +18,8 @@ artifacts/
 *~
 
 ## Environment
+.env
+.env.local
 appsettings.*.local.json
 *.db
 *.db-shm

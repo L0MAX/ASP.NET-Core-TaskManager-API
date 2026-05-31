@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using TaskManager.Infrastructure.Configuration;
 
 namespace TaskManager.Infrastructure.Data;
 
@@ -8,6 +9,8 @@ public class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<Applicatio
 {
     public ApplicationDbContext CreateDbContext(string[] args)
     {
+        DotEnvConfiguration.Load();
+
         var basePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Api");
 
         var configuration = new ConfigurationBuilder()

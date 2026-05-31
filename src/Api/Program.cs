@@ -3,6 +3,9 @@ using TaskManager.Api.Filters;
 using TaskManager.Api.Middleware;
 using TaskManager.Application;
 using TaskManager.Infrastructure;
+using TaskManager.Infrastructure.Configuration;
+
+DotEnvConfiguration.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 

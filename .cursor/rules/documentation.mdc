@@ -1,0 +1,45 @@
+---
+description: Keep README.md and .env.example synchronized with code changes
+alwaysApply: true
+---
+
+# Documentation sync (required)
+
+Whenever you **add, remove, or refactor** features, configuration, API endpoints, project structure, dependencies, or environment variables in this repository:
+
+## 1. Update README.md
+
+Edit [README.md](../../README.md) in the same change set. Keep these sections accurate:
+
+- **Tech stack** — new libraries or frameworks
+- **Solution structure** — new projects, folders, or renamed paths
+- **Quick start** — setup commands that still work
+- **Environment variables** — table and descriptions for every `SECTION__KEY` used
+- **API reference** — all public routes, auth requirements, and notable request/response shapes
+- **EF Core commands** — if migration workflow changes
+- **Cross-cutting concerns** — new middleware, filters, or DI entry points
+
+Do not leave README outdated after a code change.
+
+## 2. Update .env.example
+
+Edit [.env.example](../../.env.example) when:
+
+- A new configuration key is introduced
+- An existing key is renamed or removed
+- Default or example values should change for clarity
+
+Use comments in `.env.example` to explain each variable. Never put real secrets in `.env.example`.
+
+## 3. Do not commit secrets
+
+- `.env` is gitignored — only update locally or document that users copy from `.env.example`
+- Remove hardcoded secrets from `appsettings.json`; use `.env` or environment variables
+
+## 4. Wire new settings through .env
+
+If adding configuration:
+
+- Bind via standard ASP.NET Core env vars (`Section__Key`)
+- Load is handled by `DotEnvConfiguration.Load()` in `Program.cs` and design-time EF factory
+- Document the variable in README and `.env.example`
