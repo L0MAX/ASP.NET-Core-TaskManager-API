@@ -1,0 +1,28 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.pdb
+*.nupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## IDE
+.vs/
+.vscode/
+*.swp
+*~
+
+## Environment
+appsettings.*.local.json
+*.db
+*.db-shm
+*.db-wal
+
+## Logs
+logs/
+*.log
