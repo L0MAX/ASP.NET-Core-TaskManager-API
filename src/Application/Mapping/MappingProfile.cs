@@ -1,4 +1,5 @@
 using AutoMapper;
+using TaskManager.Application.DTOs.Projects;
 using TaskManager.Application.DTOs.Tasks;
 using TaskManager.Domain.Entities;
 
@@ -8,6 +9,7 @@ public class MappingProfile : Profile
 {
     public MappingProfile()
     {
-        CreateMap<TaskItem, TaskDto>();
+        CreateMap<Project, ProjectDto>();
+        CreateMap<ProjectTask, TaskDto>();
     }
 }

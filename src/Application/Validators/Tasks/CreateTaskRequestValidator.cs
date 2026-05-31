@@ -7,6 +7,9 @@ public class CreateTaskRequestValidator : AbstractValidator<CreateTaskRequest>
 {
     public CreateTaskRequestValidator()
     {
+        RuleFor(x => x.ProjectId)
+            .NotEmpty();
+
         RuleFor(x => x.Title)
             .NotEmpty()
             .MaximumLength(200);

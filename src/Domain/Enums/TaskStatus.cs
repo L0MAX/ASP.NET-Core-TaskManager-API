@@ -1,6 +1,6 @@
 namespace TaskManager.Domain.Enums;
 
-public enum TaskItemStatus
+public enum TaskStatus
 {
     Pending = 0,
     InProgress = 1,

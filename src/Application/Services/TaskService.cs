@@ -27,17 +27,19 @@ public class TaskService : ITaskService
     }
 
     public async Task<PaginatedList<TaskDto>> GetTasksAsync(
+        Guid projectId,
         int pageNumber,
         int pageSize,
-        TaskItemStatus? status,
+        TaskStatus? status,
         TaskPriority? priority,
         CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
+        await EnsureProjectAccessAsync(projectId, userId, cancellationToken);
 
         var query = _context.Tasks
             .AsNoTracking()
-            .Where(t => t.UserId == userId);
+            .Where(t => t.ProjectId == projectId);
 
         if (status.HasValue)
             query = query.Where(t => t.Status == status.Value);
@@ -52,76 +54,107 @@ public class TaskService : ITaskService
         return await PaginatedList<TaskDto>.CreateAsync(projected, pageNumber, pageSize, cancellationToken);
     }
 
-    public async Task<TaskDto> GetTaskByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<TaskDto> GetTaskByIdAsync(
+        Guid projectId,
+        Guid taskId,
+        CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
+        await EnsureProjectAccessAsync(projectId, userId, cancellationToken);
 
         var task = await _context.Tasks
             .AsNoTracking()
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId, cancellationToken);
+            .FirstOrDefaultAsync(t => t.Id == taskId && t.ProjectId == projectId, cancellationToken);
 
         if (task is null)
-            throw new NotFoundException(nameof(TaskItem), id);
+            throw new NotFoundException(nameof(ProjectTask), taskId);
 
         return _mapper.Map<TaskDto>(task);
     }
 
-    public async Task<TaskDto> CreateTaskAsync(CreateTaskRequest request, CancellationToken cancellationToken = default)
+    public async Task<TaskDto> CreateTaskAsync(
+        CreateTaskRequest request,
+        CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
 
-        var task = new TaskItem
-        {
-            Id = Guid.NewGuid(),
-            Title = request.Title,
-            Description = request.Description,
-            Priority = request.Priority,
-            DueDate = request.DueDate,
-            Status = TaskItemStatus.Pending,
-            UserId = userId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var project = await _context.Projects
+            .FirstOrDefaultAsync(p => p.Id == request.ProjectId && p.OwnerId == userId, cancellationToken);
 
-        _context.Tasks.Add(task);
-        await _context.SaveChangesAsync(cancellationToken);
+        if (project is null)
+            throw new NotFoundException(nameof(Project), request.ProjectId);
 
-        return _mapper.Map<TaskDto>(task);
-    }
-
-    public async Task<TaskDto> UpdateTaskAsync(Guid id, UpdateTaskRequest request, CancellationToken cancellationToken = default)
-    {
-        var userId = GetCurrentUserId();
-
-        var task = await _context.Tasks
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId, cancellationToken);
-
-        if (task is null)
-            throw new NotFoundException(nameof(TaskItem), id);
-
-        task.Title = request.Title;
-        task.Description = request.Description;
-        task.Status = request.Status;
-        task.Priority = request.Priority;
-        task.DueDate = request.DueDate;
-        task.UpdatedAt = DateTime.UtcNow;
+        var task = project.AddTask(
+            request.Title,
+            request.Description,
+            request.Priority,
+            request.DueDate,
+            request.AssigneeId);
 
         await _context.SaveChangesAsync(cancellationToken);
 
         return _mapper.Map<TaskDto>(task);
     }
 
-    public async Task DeleteTaskAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<TaskDto> UpdateTaskAsync(
+        Guid projectId,
+        Guid taskId,
+        UpdateTaskRequest request,
+        CancellationToken cancellationToken = default)
     {
         var userId = GetCurrentUserId();
 
-        var task = await _context.Tasks
-            .FirstOrDefaultAsync(t => t.Id == id && t.UserId == userId, cancellationToken);
+        var project = await _context.Projects
+            .Include(p => p.Tasks)
+            .FirstOrDefaultAsync(p => p.Id == projectId && p.OwnerId == userId, cancellationToken);
 
-        if (task is null)
-            throw new NotFoundException(nameof(TaskItem), id);
+        if (project is null)
+            throw new NotFoundException(nameof(Project), projectId);
 
-        _context.Tasks.Remove(task);
+        var task = project.GetTask(taskId);
+
+        task.UpdateDetails(
+            request.Title,
+            request.Description,
+            request.Status,
+            request.Priority,
+            request.DueDate);
+
+        task.AssignTo(request.AssigneeId);
+
         await _context.SaveChangesAsync(cancellationToken);
+
+        return _mapper.Map<TaskDto>(task);
+    }
+
+    public async Task DeleteTaskAsync(
+        Guid projectId,
+        Guid taskId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+
+        var project = await _context.Projects
+            .Include(p => p.Tasks)
+            .FirstOrDefaultAsync(p => p.Id == projectId && p.OwnerId == userId, cancellationToken);
+
+        if (project is null)
+            throw new NotFoundException(nameof(Project), projectId);
+
+        project.RemoveTask(taskId);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task EnsureProjectAccessAsync(
+        Guid projectId,
+        Guid userId,
+        CancellationToken cancellationToken)
+    {
+        var exists = await _context.Projects
+            .AnyAsync(p => p.Id == projectId && p.OwnerId == userId, cancellationToken);
+
+        if (!exists)
+            throw new NotFoundException(nameof(Project), projectId);
     }
 
     private Guid GetCurrentUserId()

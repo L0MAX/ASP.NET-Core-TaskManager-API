@@ -41,6 +41,7 @@ app.UseMiddleware<ExceptionHandlingMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     await app.Services.ApplyMigrationsAsync();
+    await TaskManager.Infrastructure.Data.DatabaseSeed.SeedAsync(app.Services);
 }
 
 app.UseSwaggerDocumentation();

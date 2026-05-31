@@ -4,10 +4,12 @@ namespace TaskManager.Application.DTOs.Tasks;
 
 public record TaskDto(
     Guid Id,
+    Guid ProjectId,
     string Title,
     string? Description,
-    TaskItemStatus Status,
+    TaskStatus Status,
     TaskPriority Priority,
     DateTime? DueDate,
+    Guid? AssigneeId,
     DateTime CreatedAt,
     DateTime? UpdatedAt);

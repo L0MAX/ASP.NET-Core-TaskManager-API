@@ -5,6 +5,7 @@ namespace TaskManager.Application.DTOs.Tasks;
 public record UpdateTaskRequest(
     string Title,
     string? Description,
-    TaskItemStatus Status,
+    TaskStatus Status,
     TaskPriority Priority,
-    DateTime? DueDate);
+    DateTime? DueDate,
+    Guid? AssigneeId = null);

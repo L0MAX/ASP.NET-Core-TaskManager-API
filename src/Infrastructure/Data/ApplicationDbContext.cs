@@ -12,7 +12,12 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
     }
 
     public DbSet<User> Users => Set<User>();
-    public DbSet<TaskItem> Tasks => Set<TaskItem>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Project> Projects => Set<Project>();
+    public DbSet<ProjectTask> Tasks => Set<ProjectTask>();
+    public DbSet<Comment> Comments => Set<Comment>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -22,16 +27,13 @@ public class ApplicationDbContext : DbContext, IApplicationDbContext
 
     public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        foreach (var entry in ChangeTracker.Entries())
+        foreach (var entry in ChangeTracker.Entries<Domain.Common.BaseEntity>())
         {
-            if (entry.Entity is Domain.Common.BaseEntity entity)
-            {
-                if (entry.State == EntityState.Added)
-                    entity.CreatedAt = DateTime.UtcNow;
+            if (entry.State == EntityState.Added)
+                entry.Entity.MarkCreated();
 
-                if (entry.State == EntityState.Modified)
-                    entity.UpdatedAt = DateTime.UtcNow;
-            }
+            if (entry.State == EntityState.Modified)
+                entry.Entity.MarkUpdated();
         }
 
         return base.SaveChangesAsync(cancellationToken);

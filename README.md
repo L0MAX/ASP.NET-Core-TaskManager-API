@@ -22,7 +22,7 @@ csharp-taskmanager-api/
 └── src/
     ├── Api/                # HTTP host, controllers, middleware, Swagger
     ├── Application/        # DTOs, validators, services, mapping
-    ├── Domain/             # Entities and domain rules
+    ├── Domain/             # DDD entities, value objects, aggregates (see Domain/README.md)
     └── Infrastructure/     # EF Core, SQL Server, JWT, migrations
 ```
 
@@ -114,18 +114,45 @@ See [.env.example](.env.example) for the full template with comments.
 }
 ```
 
-### Tasks (requires `Authorization: Bearer {token}`)
+### Projects (requires `Authorization: Bearer {token}`)
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/tasks` | Paginated list (`pageNumber`, `pageSize`, `status`, `priority`) |
-| `GET` | `/api/tasks/{id}` | Get one task |
-| `POST` | `/api/tasks` | Create task |
-| `PUT` | `/api/tasks/{id}` | Update task |
-| `DELETE` | `/api/tasks/{id}` | Delete task |
+| `GET` | `/api/projects` | Paginated list of projects owned by the user |
+| `GET` | `/api/projects/{id}` | Get one project |
+| `POST` | `/api/projects` | Create project |
+| `PUT` | `/api/projects/{id}` | Update project |
+| `DELETE` | `/api/projects/{id}` | Delete project (cascades tasks and comments) |
+
+### Tasks (requires `Authorization: Bearer {token}`)
+
+Tasks live under a project. The domain type is `ProjectTask` (table `Tasks`).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/projects/{projectId}/tasks` | Paginated list (`pageNumber`, `pageSize`, `status`, `priority`) |
+| `GET` | `/api/projects/{projectId}/tasks/{taskId}` | Get one task |
+| `POST` | `/api/projects/{projectId}/tasks` | Create task (optional `assigneeId`) |
+| `PUT` | `/api/projects/{projectId}/tasks/{taskId}` | Update task |
+| `DELETE` | `/api/projects/{projectId}/tasks/{taskId}` | Delete task |
 
 **Task status:** `Pending`, `InProgress`, `Completed`, `Cancelled`  
 **Priority:** `Low`, `Medium`, `High`, `Critical`
+
+## Domain model
+
+See [src/Domain/README.md](src/Domain/README.md) for aggregate boundaries and relationships.
+
+| Concept | Entity | Aggregate root |
+|---------|--------|------------------|
+| User | `User` | Yes |
+| Project | `Project` | Yes |
+| Task | `ProjectTask` | No (child of `Project`) |
+| Comment | `Comment` | No (child of `ProjectTask`) |
+| Role | `Role` | Reference data |
+| Refresh token | `RefreshToken` | No (child of `User`) |
+
+**Relationships:** User owns Projects → Project contains Tasks → Task has Comments; Task optionally assigned to User (`AssigneeId`); User ↔ Role via `UserRole`; User has RefreshTokens.
 
 ### Health
 

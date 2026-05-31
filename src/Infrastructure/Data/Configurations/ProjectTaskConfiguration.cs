@@ -4,9 +4,9 @@ using TaskManager.Domain.Entities;
 
 namespace TaskManager.Infrastructure.Data.Configurations;
 
-public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
+public class ProjectTaskConfiguration : IEntityTypeConfiguration<ProjectTask>
 {
-    public void Configure(EntityTypeBuilder<TaskItem> builder)
+    public void Configure(EntityTypeBuilder<ProjectTask> builder)
     {
         builder.ToTable("Tasks");
 
@@ -16,8 +16,7 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .IsRequired()
             .HasMaxLength(200);
 
-        builder.Property(t => t.Description)
-            .HasMaxLength(2000);
+        builder.Property(t => t.Description).HasMaxLength(2000);
 
         builder.Property(t => t.Status)
             .IsRequired()
@@ -29,9 +28,16 @@ public class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasConversion<string>()
             .HasMaxLength(32);
 
-        builder.Property(t => t.CreatedAt)
-            .IsRequired();
+        builder.Property(t => t.CreatedAt).IsRequired();
 
-        builder.HasIndex(t => new { t.UserId, t.Status });
+        builder.HasIndex(t => new { t.ProjectId, t.Status });
+        builder.HasIndex(t => t.AssigneeId);
+
+        builder.HasMany(t => t.Comments)
+            .WithOne(c => c.Task)
+            .HasForeignKey(c => c.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(t => t.Comments).HasField("_comments");
     }
 }

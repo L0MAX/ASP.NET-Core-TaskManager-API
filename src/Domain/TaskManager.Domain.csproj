@@ -7,4 +7,8 @@
     <RootNamespace>TaskManager.Domain</RootNamespace>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="TaskManager.Infrastructure" />
+  </ItemGroup>
+
 </Project>

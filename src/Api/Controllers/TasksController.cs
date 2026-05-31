@@ -9,7 +9,7 @@ namespace TaskManager.Api.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/projects/{projectId:guid}/[controller]")]
 public class TasksController : ControllerBase
 {
     private readonly ITaskService _taskService;
@@ -22,57 +22,66 @@ public class TasksController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedList<TaskDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PaginatedList<TaskDto>>> GetTasks(
+        Guid projectId,
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] TaskItemStatus? status = null,
+        [FromQuery] TaskStatus? status = null,
         [FromQuery] TaskPriority? priority = null,
         CancellationToken cancellationToken = default)
     {
         if (pageNumber < 1) pageNumber = 1;
         if (pageSize is < 1 or > 100) pageSize = 10;
 
-        var result = await _taskService.GetTasksAsync(pageNumber, pageSize, status, priority, cancellationToken);
+        var result = await _taskService.GetTasksAsync(
+            projectId, pageNumber, pageSize, status, priority, cancellationToken);
+
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("{taskId:guid}")]
     [ProducesResponseType(typeof(TaskDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<TaskDto>> GetTask(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskDto>> GetTask(
+        Guid projectId,
+        Guid taskId,
+        CancellationToken cancellationToken)
     {
-        var task = await _taskService.GetTaskByIdAsync(id, cancellationToken);
+        var task = await _taskService.GetTaskByIdAsync(projectId, taskId, cancellationToken);
         return Ok(task);
     }
 
     [HttpPost]
     [ProducesResponseType(typeof(TaskDto), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TaskDto>> CreateTask(
+        Guid projectId,
         [FromBody] CreateTaskRequest request,
         CancellationToken cancellationToken)
     {
-        var task = await _taskService.CreateTaskAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
+        var createRequest = request with { ProjectId = projectId };
+        var task = await _taskService.CreateTaskAsync(createRequest, cancellationToken);
+        return CreatedAtAction(nameof(GetTask), new { projectId, taskId = task.Id }, task);
     }
 
-    [HttpPut("{id:guid}")]
+    [HttpPut("{taskId:guid}")]
     [ProducesResponseType(typeof(TaskDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<TaskDto>> UpdateTask(
-        Guid id,
+        Guid projectId,
+        Guid taskId,
         [FromBody] UpdateTaskRequest request,
         CancellationToken cancellationToken)
     {
-        var task = await _taskService.UpdateTaskAsync(id, request, cancellationToken);
+        var task = await _taskService.UpdateTaskAsync(projectId, taskId, request, cancellationToken);
         return Ok(task);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{taskId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteTask(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteTask(
+        Guid projectId,
+        Guid taskId,
+        CancellationToken cancellationToken)
     {
-        await _taskService.DeleteTaskAsync(id, cancellationToken);
+        await _taskService.DeleteTaskAsync(projectId, taskId, cancellationToken);
         return NoContent();
     }
 }
